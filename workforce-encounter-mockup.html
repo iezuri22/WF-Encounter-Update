@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECM — Workforce Encounter</title>
+<style>
+  :root{
+    --ecm-blue:#4791D0; --ecm-dark:#1F4E79; --rail:#5b97c9; --rail-dark:#4a86bd;
+    --line:#cdd6df; --ink:#33424f; --muted:#7b8794; --labbg:#eef2f6; --secbg:#dfeaf4;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);background:#eef1f4;font-size:13px}
+  .topbar{background:linear-gradient(180deg,#4f93cf,#3f80bf);color:#fff;display:flex;
+    align-items:center;justify-content:space-between;padding:8px 18px;height:54px}
+  .brand{display:flex;align-items:center;gap:10px;font-size:24px;font-weight:700;letter-spacing:1px}
+  .topnav{display:flex;gap:24px;font-size:11px}
+  .topnav a{color:#fff;text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:2px;opacity:.95}
+  .topnav .ic{font-size:15px}
+  .shell{display:flex;min-height:calc(100vh - 54px)}
+  .rail{width:208px;background:linear-gradient(180deg,var(--rail),var(--rail-dark));color:#eaf3fb;flex:0 0 208px}
+  .rail .acct{background:#2f6699;color:#fff;font-weight:700;padding:10px 16px}
+  .rail .item,.rail .sub{padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.08);font-size:12px;display:flex;gap:9px;align-items:center}
+  .rail .sub{padding-left:32px}
+  .rail .group{padding:10px 16px;display:flex;justify-content:space-between;font-weight:700;color:#fff;font-size:12px}
+  .rail .active{background:#cfe0ee;color:#1f4e79;font-weight:600}
+  .rail .ic{opacity:.85;width:15px;text-align:center}
+  .main{flex:1;padding:0 0 50px}
+  /* tabs */
+  .tabs{display:flex;gap:3px;padding:12px 18px 0}
+  .tab{background:#dce4ec;border:1px solid var(--line);border-bottom:none;padding:8px 22px;
+    border-radius:5px 5px 0 0;cursor:pointer;font-weight:600;color:#566472}
+  .tab.active{background:#fff;color:var(--ecm-dark)}
+  .panel{background:#fff;border:1px solid var(--line);margin:0 18px;border-radius:0 5px 5px 5px}
+  .band{background:linear-gradient(180deg,#5b97cd,#4684bd);color:#fff;display:flex;align-items:center;
+    gap:10px;padding:11px 18px;font-size:16px;font-weight:700;letter-spacing:.5px;border-radius:0 5px 0 0}
+  .band .spacer{flex:1}
+  .addbtn{background:#fff;color:var(--ecm-blue);border-radius:18px;padding:3px 12px 3px 5px;font-weight:700;
+    display:inline-flex;align-items:center;gap:6px;border:none;cursor:pointer;font-size:12px}
+  .addbtn .plus{background:var(--ecm-blue);color:#fff;border-radius:50%;width:17px;height:17px;
+    display:inline-flex;align-items:center;justify-content:center}
+  .chart{background:rgba(255,255,255,.2);border-radius:4px;padding:3px 7px}
+  /* encounter type row */
+  .typerow{display:flex;gap:12px;padding:16px 18px;flex-wrap:wrap;align-items:center}
+  .typebox{border:1px solid var(--line);border-radius:5px;padding:12px 16px;font-weight:700;color:#3a4a59;min-width:240px}
+  .pillrow{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
+  .pill{border:1px solid var(--line);border-radius:5px;padding:7px 13px;text-align:center;min-width:88px;
+    font-size:11px;background:#f4f8fc;line-height:1.3}
+  .pill b{display:block;color:#3a4a59}
+  .pill.on{background:var(--ecm-blue);color:#fff;border-color:var(--ecm-blue)}
+  .pill.on b{color:#fff}
+  /* section header bar (plain ECM style) */
+  .sechead{background:linear-gradient(180deg,#eaf2fa,#dbe8f5);color:var(--ecm-dark);font-weight:700;
+    padding:8px 16px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.4px}
+  .sechead .edit{background:var(--ecm-blue);color:#fff;border-radius:3px;width:19px;height:19px;
+    display:inline-flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer}
+  .sechead .ts{margin-left:auto;font-weight:600;color:#54606c}
+  .block{padding:14px 18px}
+  /* labelled field grid */
+  .fgrid{display:grid;grid-template-columns:130px 1fr 130px 1fr 130px 1fr;border:1px solid var(--line)}
+  .fgrid .lab{background:var(--labbg);padding:9px 11px;font-weight:700;font-size:11px;color:#5a6773;
+    border-right:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;align-items:center}
+  .fgrid .fld{padding:6px 8px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .fgrid input,.fgrid select{width:100%;border:1px solid #d9e0e7;border-radius:4px;padding:6px 8px;font-size:12px;background:#fff;color:#2c3e50}
+  .fgrid input:focus,.fgrid select:focus{outline:none;border-color:var(--ecm-blue)}
+  .two{grid-template-columns:130px 1fr}
+  /* services */
+  .svc-sub{font-weight:700;color:#3a4a59;margin:4px 0 10px;font-size:13px;border-left:3px solid var(--ecm-blue);padding-left:8px}
+  .svc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px 24px;margin-bottom:18px}
+  @media(max-width:900px){.svc-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:620px){.svc-grid{grid-template-columns:1fr}}
+  .svc{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:#3a4a59}
+  .svc input[type=checkbox]{width:15px;height:15px;margin-top:1px;accent-color:var(--ecm-blue);cursor:pointer}
+  .svc-other{grid-column:1/-1;display:flex;gap:10px;align-items:center}
+  .svc-other input[type=text]{flex:1;border:1px solid #d9e0e7;border-radius:4px;padding:6px 9px;font-size:12px}
+  .editbar{display:flex;gap:10px;align-items:center;margin-top:4px}
+  .btn{border:none;border-radius:5px;padding:7px 15px;font-weight:600;cursor:pointer;font-size:12px}
+  .btn.primary{background:var(--ecm-blue);color:#fff}
+  .btn.ghost{background:#eef2f6;color:#42505d}
+  .hint{color:var(--muted);font-size:11px}
+  .locked .svc input,.locked .svc-other input{pointer-events:none;opacity:.85}
+  /* monthly */
+  .m-toolbar{display:flex;align-items:center;gap:16px;padding:14px 18px;flex-wrap:wrap;border-bottom:1px solid var(--line);background:#f7fafd}
+  .m-toolbar label{font-size:12px;color:#54606c;display:flex;gap:8px;align-items:center}
+  .m-toolbar select,.m-toolbar input{border:1px solid var(--line);border-radius:5px;padding:7px 10px;font-size:12px;background:#fff}
+  .m-meta{font-size:12px;color:#54606c}
+  .m-meta b{color:var(--ecm-dark)}
+  .hidden{display:none}
+  .emptymsg{padding:24px 18px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><span>❖❖</span> ECM <span style="opacity:.6">↻</span></div>
+  <div class="topnav">
+    <a><span class="ic">⌂</span>Home</a><a><span class="ic">▤</span>Forms</a>
+    <a><span class="ic">🔖</span>Bookmark ▾</a><a><span class="ic">?</span>Help</a>
+    <a><span class="ic">☰</span>My Profile ▾</a><a><span class="ic">⋮⋮</span>Other… ▾</a>
+  </div>
+</div>
+
+<div class="shell">
+  <aside class="rail">
+    <div class="acct">Account Summary</div>
+    <div class="item"><span class="ic">⚘</span> Outreach Service</div>
+    <div class="item"><span class="ic">▤</span> Application</div>
+    <div class="item"><span class="ic">⚘</span> WF Placement</div>
+    <div class="group">Referral <span>⌄</span></div>
+    <div class="sub"><span class="ic">▦</span> Outgoing</div>
+    <div class="sub"><span class="ic">▦</span> Incoming</div>
+    <div class="group">Billing <span>⌄</span></div>
+    <div class="sub"><span class="ic">⚙</span> Auto Payment Billing</div>
+    <div class="group">Encounter <span>⌄</span></div>
+    <div class="sub active"><span class="ic">⇕</span> Encounter</div>
+  </aside>
+
+  <main class="main">
+    <div class="tabs">
+      <div class="tab active" data-tab="enc" onclick="showTab('enc')">Encounter</div>
+      <div class="tab" data-tab="mon" onclick="showTab('mon')">Monthly</div>
+    </div>
+
+    <!-- ENCOUNTER -->
+    <section class="panel" id="tab-enc">
+      <div class="band"><span>ENCOUNTER</span>
+        <button class="addbtn"><span class="plus">+</span> ADD</button>
+        <span class="spacer"></span><span class="chart">▥</span></div>
+
+      <div class="typerow">
+        <div class="typebox">Re-Entry Encounter [WJI_Workforce]</div>
+        <div class="pillrow">
+          <div class="pill on"><b>Individual</b>Encounter</div>
+          <div class="pill"><b>Method</b>Walk-in</div>
+          <div class="pill"><b>Location</b>Main</div>
+          <div class="pill"><b>Staff</b>WJI_DWinchester</div>
+        </div>
+      </div>
+
+      <div class="sechead">ENCOUNTER INFORMATION <span class="ts">5/19/2026 &nbsp; 10:48 AM – 10:50 AM</span></div>
+
+      <div class="block">
+        <div class="fgrid">
+          <div class="lab">First Name</div><div class="fld"><input value="Jane"></div>
+          <div class="lab">Last Name</div><div class="fld"><input value="Doe"></div>
+          <div class="lab">DOB</div><div class="fld"><input type="date" value="1990-06-15"></div>
+          <div class="lab">Relationship</div><div class="fld">
+            <select><option>Self</option><option>Community Provider</option><option>Family Member</option><option>Case Manager</option><option>Other</option></select></div>
+          <div class="lab">Phone</div><div class="fld"><input value="(312) 555-0147"></div>
+          <div class="lab">Email</div><div class="fld"><input value="jane.doe@email.com"></div>
+          <div class="lab">Address</div><div class="fld"><input value="6225 S Halsted St, Chicago, IL"></div>
+          <div class="lab">Zip Code</div><div class="fld"><input value="60621"></div>
+          <div class="lab">County</div><div class="fld">
+            <select><option>Cook</option><option>DuPage</option><option>Lake</option><option>Will</option></select></div>
+        </div>
+      </div>
+
+      <div class="sechead">DETAILS</div>
+      <div class="block">
+        <div class="fgrid two">
+          <div class="lab">Request</div><div class="fld">
+            <select><option>Encounter Request</option><option>Re-Entry Navigation</option><option>Walk-in Inquiry</option></select></div>
+        </div>
+      </div>
+
+      <!-- SERVICES -->
+      <div class="sechead">SERVICES <span class="edit" id="svcEditBtn" onclick="toggleEdit()" title="Edit services">✎</span></div>
+      <div class="block locked" id="svcCard">
+        <div class="svc-sub">CRSC Services</div>
+        <div class="svc-grid" id="suppGrid"></div>
+        <div class="editbar">
+          <button class="btn primary hidden" id="svcSave" onclick="saveEdit()">Save</button>
+          <button class="btn ghost hidden" id="svcCancel" onclick="toggleEdit()">Done</button>
+          <span class="hint" id="svcHint">Click the ✎ to make this section editable.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- MONTHLY -->
+    <section class="panel hidden" id="tab-mon">
+      <div class="band"><span>MONTHLY REPORT LOG</span><span class="spacer"></span><span class="chart">▥</span></div>
+      <div class="m-toolbar">
+        <label>Month
+          <select id="monthSel" onchange="renderMonth()"></select>
+        </label>
+        <span class="m-meta">Agency: <b>Teamwork Englewood</b></span>
+        <span class="m-meta">Staff: <b>Calvin Larkins</b></span>
+        <span class="m-meta">Program Year: <b>2026</b></span>
+      </div>
+      <div id="monthBody"></div>
+    </section>
+  </main>
+</div>
+
+<script>
+/* ============ SERVICES ============ */
+const supportive = [
+  {label:"Referral for Education Services Provided", on:false},
+  {label:"Referral to Housing Assistance Provided", on:true},
+  {label:"Referral to Employment Assistance Provided", on:false},
+  {label:"Referral to Healthcare & Treatment Provided", on:false},
+  {label:"Referral for Services (legal, etc.) Provided", on:true},
+  {label:"Referral for Crisis Intervention & Safety", on:false},
+  {label:"Referral for Family Support Services", on:false},
+  {label:"Referral for Legal Services", on:false},
+  {label:"Application Fees", on:false},
+  {label:"Clothing", on:false},
+  {label:"Eye exam and glasses", on:false},
+  {label:"Financial Counseling", on:false},
+  {label:"Legal Assistance", on:false},
+  {label:"Mental Health Referral", on:false},
+  {label:"Substance Abuse Referral", on:false},
+  {label:"Transportation", on:false},
+  {label:"Case Management", on:false},
+  {label:"In-House Services", on:false},
+  {label:"Nutrition Services", on:false},
+  {label:"Other", on:false, other:true},
+];
+let editing=false;
+function buildGroup(arr,el){
+  el.innerHTML='';
+  arr.forEach((s,i)=>{
+    if(s.other){
+      const d=document.createElement('div');d.className='svc-other';
+      d.innerHTML=`<label class="svc"><input type="checkbox" data-grp="${el.id}" data-i="${i}" ${s.on?'checked':''}> Other –</label>
+        <input type="text" placeholder="Open text…" data-other="${el.id}" value="${s.text||''}">`;
+      el.appendChild(d);return;
+    }
+    const d=document.createElement('div');d.className='svc';
+    d.innerHTML=`<input type="checkbox" data-grp="${el.id}" data-i="${i}" ${s.on?'checked':''}><span>${s.label}</span>`;
+    el.appendChild(d);
+  });
+  el.querySelectorAll('input[type=checkbox]').forEach(c=>c.addEventListener('change',e=>{
+    supportive[e.target.dataset.i].on=e.target.checked;
+  }));
+}
+function renderServices(){buildGroup(supportive,document.getElementById('suppGrid'));}
+function toggleEdit(){
+  editing=!editing;
+  document.getElementById('svcCard').classList.toggle('locked',!editing);
+  document.getElementById('svcSave').classList.toggle('hidden',!editing);
+  document.getElementById('svcCancel').classList.toggle('hidden',!editing);
+  document.getElementById('svcHint').textContent=editing?'Editing — check / uncheck services, then Save.':'Click the ✎ to make this section editable.';
+  document.getElementById('svcEditBtn').style.background=editing?'#1F4E79':'';
+}
+function saveEdit(){
+  const t=document.querySelector('input[data-other="suppGrid"]');if(t)supportive.find(s=>s.other).text=t.value;
+  toggleEdit();const h=document.getElementById('svcHint');h.textContent='Saved ✓';
+  setTimeout(()=>{if(!editing)h.textContent='Click the ✎ to make this section editable.';},1600);
+}
+renderServices();
+
+/* ============ MONTHLY (one entry per month, from monthly.xlsx) ============ */
+const months=[
+  {m:"January 2026", total:206, phone:166, walkin:33, idoc:1, ccj:1, other:5, sched:3, spring:0,
+   needs:40, enrolled:40, completed:0, refTot:151, edu:0, housing:20, employ:46, own:46, health:2, legal:37,
+   interviews:6, placed:9, r30:5, r60:3, r90:3, recid:26},
+  {m:"February 2026", total:276, phone:221, walkin:43, idoc:0, ccj:0, other:12, sched:3, spring:0,
+   needs:55, enrolled:55, completed:0, refTot:183, edu:0, housing:19, employ:55, own:55, health:0, legal:54,
+   interviews:9, placed:9, r30:5, r60:8, r90:2, recid:12},
+  {m:"March 2026", total:285, phone:247, walkin:38, idoc:0, ccj:0, other:0, sched:3, spring:0,
+   needs:38, enrolled:38, completed:0, refTot:157, edu:6, housing:4, employ:38, own:38, health:0, legal:71,
+   interviews:25, placed:14, r30:4, r60:9, r90:4, recid:17},
+  {m:"April 2026", total:336, phone:307, walkin:18, idoc:0, ccj:4, other:7, sched:3, spring:0,
+   needs:29, enrolled:29, completed:0, refTot:129, edu:2, housing:4, employ:29, own:29, health:0, legal:65,
+   interviews:30, placed:15, r30:9, r60:10, r90:3, recid:22},
+  {m:"May 2026", empty:true},{m:"June 2026", empty:true},{m:"July 2026", empty:true},
+  {m:"August 2026", empty:true},{m:"September 2026", empty:true},{m:"October 2026", empty:true},
+  {m:"November 2026", empty:true},{m:"December 2026", empty:true},
+];
+function fld(lab,val){return `<div class="lab">${lab}</div><div class="fld"><input value="${val}"></div>`;}
+function secHead(t){return `<div class="sechead">${t}</div>`;}
+function renderMonth(){
+  const d=months[document.getElementById('monthSel').value];
+  const b=document.getElementById('monthBody');
+  if(d.empty){b.innerHTML=`<div class="emptymsg">No engagements reported for <b>${d.m}</b> yet.</div>`;return;}
+  b.innerHTML=
+    secHead("ENGAGEMENT / POINTS OF CONTACT")+
+    `<div class="block"><div class="fgrid">
+      ${fld("Total # of Engagement", d.total)}
+      ${fld("# of Phone Calls", d.phone)}
+      ${fld("# Referred from Walk-in", d.walkin)}
+      ${fld("# Referred from IDOC", d.idoc)}
+      ${fld("# Referred from CCJ / CCDOC", d.ccj)}
+      ${fld("# Referred from Other (Email, CBOs, 211)", d.other)}
+      ${fld("# Scheduled Presentations (job/resource fairs)", d.sched)}
+      ${fld("# Referred TO SPRING Forward", d.spring)}
+    </div></div>`+
+    secHead("ENROLLMENT")+
+    `<div class="block"><div class="fgrid">
+      ${fld("# Needs Assessments to New Clients", d.needs)}
+      ${fld("# New Participants Enrolled", d.enrolled)}
+    </div></div>`+
+    secHead("CASE MANAGEMENT / REENTRY NAVIGATION")+
+    `<div class="block"><div class="fgrid">
+      ${fld("# Completed reentry program / mandates", d.completed)}
+      ${fld("# Referrals to additional supportive services", d.refTot)}
+      ${fld("— Education Services", d.edu)}
+      ${fld("— Housing Assistance", d.housing)}
+      ${fld("— Employment Assistance", d.employ)}
+      ${fld("— Your agency's own programs", d.own)}
+      ${fld("— Healthcare & Treatment", d.health)}
+      ${fld("— Other Services (legal, etc.)", d.legal)}
+    </div></div>`+
+    secHead("EMPLOYMENT PLACEMENT & RETENTION")+
+    `<div class="block"><div class="fgrid">
+      ${fld("# Job Interviews Completed", d.interviews)}
+      ${fld("# Clients Placed in Employment", d.placed)}
+      ${fld("# Met 30-day retention", d.r30)}
+      ${fld("# Met 60-day retention", d.r60)}
+      ${fld("# Met 90-day retention", d.r90)}
+    </div></div>`+
+    secHead("RECIDIVISM")+
+    `<div class="block"><div class="fgrid two">
+      ${fld("# Avoided recidivism 12 months or more", d.recid)}
+    </div></div>`;
+}
+function initMonths(){
+  const sel=document.getElementById('monthSel');
+  months.forEach((d,i)=>{const o=document.createElement('option');o.value=i;o.textContent=d.m+(d.empty?" (no data)":"");sel.appendChild(o);});
+  renderMonth();
+}
+initMonths();
+
+/* ============ TABS ============ */
+function showTab(t){
+  document.getElementById('tab-enc').classList.toggle('hidden',t!=='enc');
+  document.getElementById('tab-mon').classList.toggle('hidden',t!=='mon');
+  document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('active',el.dataset.tab===t));
+}
+</script>
+</body>
+</html>
